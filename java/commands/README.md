@@ -8,5 +8,5 @@ Useful Java Commands
 
 #### Show the effective property value(s) your JVM picked up:
 ```
-[user@system ~] java -XshowSettings:all
+[user@system ~]$ java -XshowSettings:all
 ```
