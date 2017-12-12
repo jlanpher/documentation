@@ -161,3 +161,150 @@ Tagging Practices
 Normally, the "latest" tag is automatically added by docker if nothing is provided, because it is considered to be teh image's latest build.  However, this may not be true depending on how the tags are used.  For example, most open source projects consider "latest" as the most recent release not the latest build.
 
 Moreover, multiple tags are provided to minimize the need to recall the latest release of a certain version of a project.  Thus, if there is a project version release (e.g. 2.1.10), another tag called 2.1 can be created and pointed to the same image from the 2.1.10 release to simplify how the image is pulled from the registry.
+
+
+
+General
+=======
+
+To access an already running container execute the following command:
+
+```
+docker exec -it CONTAINER_NAME bash
+```
+
+LABEL is responsible for adding generic metadata to an image. A LABEL is a simple key/value pair.
+
+
+MAINTAINER is responsible for setting the Author field of the generated container image. You can use the docker inspect command to view image metadata.
+
+
+RUN executes commands in a new layer on top of the current image, then commits the results. The committed result is used in the next step in the Dockerfile. The shell that is used to execute commands is /bin/sh.
+
+
+EXPOSE indicates that the container listens on the specified network ports at runtime. The Docker containerized environment uses this information to interconnect containers using the linked containers feature. The EXPOSE instruction is only metadata; it does not make ports accessible from the host. The -p option in the docker run command exposes a port from the host and the port does not need to be listed in an EXPOSE instruction.
+
+ENV is responsible for defining environment variables that will be available to the container. You can declare multiple ENV instructions within the Dockerfile. You can use the env command inside the container to view each of the environment variables.
+
+
+ADD copies new files, directories, or remote URLs and adds them to the container file system.
+
+
+COPY also copies new files and directories and adds them to the container file system. However, it is not possible to use a URL.
+
+
+USER specifies the username or the UID to use when running the container image for the RUN, CMD, and ENTRYPOINT instructions in the Dockerfile. It is a good practice to define a different user other than root for security reasons.
+
+ENTRYPOINT specifies the default command to execute when the container is created. By default, the command that is executed is /bin/sh -c unless an ENTRYPOINT is specified.
+
+CMD provides the default arguments for the ENTRYPOINT instruction.
+
+
+The ENTRYPOINT and CMD instructions have two formats:
+
+* Using a JSON Array:
+
+```
+ENTRYPOINT ["command", "param1", "param2"]
+
+
+CMD ["param1", "param2"]
+```
+
+This is the preferred form.
+
+
+* Using a shell form:
+```
+ENTRYPOINT param1 param2
+
+CMD param1 param2
+```
+
+The Dockerfile should contain at most one ENTRYPOINT and one CMD instruction. If more than one of each is written, then only the last instruction takes effect. Because the default ENTRYPOINT is /bin/sh -c, a CMD can be passed in without specifying an ENTRYPOINT.
+
+The CMD instruction can be overridden when starting a container. For example, the following instruction causes any container that is run to ping the local host:
+
+```
+ENTRYPOINT ["/bin/ping", "localhost"]
+```
+
+The following example provides the same functionality, with the added benefit of being overwritable when a container is started:
+
+```
+ENTRYPOINT ["/bin/ping"]
+
+CMD ["localhost"]
+```
+When a container is started without providing a parameter, localhost is pinged:
+
+```
+docker run -it test/my-test
+```
+
+if a parameter is provided after the image name in the docker run command, however, it overwrites the CMD instruction. For example, the following command will ping google.com instead of localhost:
+
+```
+docker run -it test/my-test google.com
+```
+
+As previously mentioned, because the default ENTRYPOINT is /bin/sh -c, the following instruction also pings localhost, without the added benefit of being able to override the parameter at run time.
+
+```
+CMD ["/bin/ping", "localhost"]
+```
+
+
+The ADD and COPY instructions have two forms:
+
+* Using Shell form:
+
+```
+ADD <source>... <destination>
+
+COPY <source>... <destination>
+```
+
+* Using JSON array:
+
+```
+ADD ["<source>...", ["<destination>"]
+
+COPY ["<source>...", ["<destination>"]
+```
+
+The source path must be inside the same folder as the Dockerfile. The reason for this is that the first step of a docker build command is to send all files from the Dockerfile folder to the docker daemon, and the docker daemon cannot see folders or files that are in another folder.
+
+Image Layering
+
+Each instruction in a Dockerfile creates a new layer. Having too many instructions in a Dockerfile causes too many layers, resulting in large images.
+
+```
+RUN yum --disablerepo=* --enablerepo="rhel-7-server-rpms" && \
+yum update && \
+yum install -y httpd
+```
+
+The example creates only one layer and the readability is not compromised. This layering concept also applies to instructions such as ENV and LABEL. To specify multiple LABEL or ENV instructions, Red Hat recommends that you use only one instruction per line, and separate each key-value pair with an equals sign (=):
+
+```
+LABEL version="2.0" \
+description="This is an example container image" \
+creationDate="01-09-2017"
+
+
+ENV MYSQL_ROOT_PASSWORD="my_password" \
+MYSQL_DATABASE "my_database"
+
+```
+
+Building Images with the docker command
+=======================================
+
+The docker build command processes the Dockerfile and builds a new image based on the instructions it contains.  The syntax for this command is as follows:
+
+```
+docker build -t NAME:TAG DIR
+```
+
+DIR is the path to the working directory.  It can be the current directory as designated by a period(.) if the working directory is the current directory of the shell.  NAME:TAG is a name with a tag that is assigned to the new image.  It is specified with the -t option.  If the TAG is not specified, then the image is automatically tagged as latest.
